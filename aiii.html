@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student AI</title>
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css"/>
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f5f7;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      background-color: #222;
+      color: #fff;
+      width: 300px;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .new-chat-btn {
+      background-color: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .new-chat-btn i {
+      margin-right: 10px;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #333;
+      border: 1px solid #666;
+      border-radius: 4px;
+      color: #fff;
+    }
+
+    .chat-list {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    .chat-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #444;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-item.active {
+      background-color: #333;
+    }
+
+    .chat-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 200px;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background-color: #fff;
+    }
+
+    #response {
+      flex: 1;
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+
+    .message {
+      padding: 12px 16px;
+      margin: 10px 0;
+      border-radius: 8px;
+    }
+
+    .message.user {
+      background-color: #d4edda;
+      align-self: flex-end;
+    }
+
+    .message.assistant {
+      background-color: #e9ecef;
+    }
+    .chat-title {
+  cursor: pointer;
+}
+
+.chat-title:hover {
+  text-decoration: underline;
+}
+
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <button class="new-chat-btn" onclick="createNewChat()">
+        <i class="fas fa-plus"></i> New Chat
+      </button>
+      <div class="search-bar">
+        <input type="text" placeholder="Search..."/>
+      </div>
+      <ul class="chat-list" id="chatList"></ul>
+    </div>
+
+    <!-- Main Chat -->
+    <div class="main-content">
+      <h2>Student AI</h2>
+      <div class="form-group">
+        <input type="text" id="userInput" class="form-control" placeholder="Enter your question" />
+      </div>
+      <button class="btn btn-success" onclick="sendMessage()">Ask!</button>
+      <div id="response"></div>
+    </div>
+  </div>
+
+  <script>
+    let allChats = [];
+    let activeChatId = null;
+
+    window.onload = () => {
+      const savedChats = JSON.parse(localStorage.getItem('chats'));
+      if (savedChats && savedChats.length > 0) {
+        allChats = savedChats;
+        activeChatId = savedChats[0].id;
+        renderChatList();
+        renderChatContent();
+      }
+    };
+
+    function createNewChat() {
+      const newChat = {
+        id: Date.now(),
+        title: "New Chat",
+        messages: []
+      };
+      allChats.unshift(newChat);
+      activeChatId = newChat.id;
+      saveChats();
+      renderChatList();
+      renderChatContent();
+    }
+
+    function setActiveChat(chatId) {
+      activeChatId = chatId;
+      renderChatList();
+      renderChatContent();
+    }
+
+    function renameChat(chatId, event) {
+  event.stopPropagation(); // prevent activating chat when editing title
+  const chat = allChats.find(c => c.id === chatId);
+  if (!chat) return;
+
+  const newTitle = prompt("Rename this chat:", chat.title);
+  if (newTitle && newTitle.trim()) {
+    chat.title = newTitle.trim();
+    saveChats();
+    renderChatList();
+  }
+}
+
+function renderChatList() {
+  const chatList = document.getElementById('chatList');
+  chatList.innerHTML = '';
+
+  allChats.forEach(chat => {
+    const active = chat.id === activeChatId ? 'active' : '';
+
+    chatList.innerHTML += `
+      <li class="chat-item ${active}" onclick="setActiveChat(${chat.id})">
+        <span class="chat-title" ondblclick="renameChat(${chat.id}, event)">${chat.title}</span>
+        <button class="options-btn"><i class="fas fa-ellipsis-h"></i></button>
+      </li>
+    `;
+  });
+}
+
+
+
+    function renderChatContent() {
+      const responseDiv = document.getElementById('response');
+      responseDiv.innerHTML = '';
+      const chat = allChats.find(c => c.id === activeChatId);
+      if (!chat) return;
+
+      chat.messages.forEach(msg => {
+        const cls = msg.role === 'user' ? 'user' : 'assistant';
+        responseDiv.innerHTML += `
+          <div class="message ${cls}">
+            <strong>${msg.role === 'user' ? 'You' : 'Panda'}:</strong>
+            <div class="content">${marked.parse(msg.content)}</div>
+          </div>
+        `;
+      });
+      responseDiv.scrollTop = responseDiv.scrollHeight;
+    }
+
+async function sendMessage() {
+  const inputField = document.getElementById('userInput');
+  const input = inputField.value.trim();
+  if (!input || !activeChatId) return;
+
+  const userMsg = { role: 'user', content: input };
+  const activeChat = allChats.find(c => c.id === activeChatId);
+  activeChat.messages.push(userMsg);
+  inputField.value = '';
+  renderChatContent();
+
+  try {
+    const response = await fetch('http://localhost:3000/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messages: activeChat.messages
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || "No response from AI.";
+
+    const assistantMsg = { role: 'assistant', content: reply };
+    activeChat.messages.push(assistantMsg);
+    saveChats();
+    renderChatContent();
+
+  } catch (error) {
+    console.error(error);
+    const errorMsg = { role: 'assistant', content: "⚠️ Error connecting to AI." };
+    activeChat.messages.push(errorMsg);
+    renderChatContent();
+  }
+}
+
+    function saveChats() {
+      localStorage.setItem('chats', JSON.stringify(allChats));
+    }
+  </script>
+</body>
+</html>
