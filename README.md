@@ -46,19 +46,19 @@ AWS EC2 / Heroku (deployment-ready)
 
 📂 Project Structure
 student-ai/
-│── backend/              # Django/FastAPI backend
-│   ├── models/           # Database models
-│   ├── api/              # REST API endpoints
-│   ├── ml/               # ML model training + prediction
+│── backend/              
+│   ├── models/           
+│   ├── api/             
+│   ├── ml/             
 │   └── requirements.txt  
 │
-│── frontend/             # React frontend
-│   ├── src/components/   # Reusable UI components
-│   ├── src/pages/        # Pages (Dashboard, Profile, etc.)
+│── frontend/             
+│   ├── src/components/   
+│   ├── src/pages/       
 │   └── package.json
 │
-│── docker-compose.yml    # For containerization
-│── README.md             # Documentation
+│── docker-compose.yml  
+│── README.md             
 
 ⚙️ Installation & Setup
 🔹 Backend (Django/FastAPI)
